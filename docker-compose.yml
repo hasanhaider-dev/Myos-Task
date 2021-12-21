@@ -1,0 +1,45 @@
+version: '3'
+
+services:
+  myosDb:
+    image: mongo:latest
+    container_name: myosDb
+    restart: unless-stopped
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=myosdbuser
+      - MONGO_INITDB_ROOT_PASSWORD=admin
+    ports:
+      - 27017:27017  
+    volumes:     
+      - mongodb_server_data:/data/db
+    networks:
+      - app-network
+  myos:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      network: host
+    container_name: myos
+    restart: unless-stopped
+    environment:
+      - DB_USERNAME=myosdbuser
+      - DB_PASSWORD=admin
+      - DB_HOSTNAME=myosDb
+      - DB_PORT=27017
+      - DB_NAME=myos
+    ports:
+      - "3005:3005"
+    volumes:
+      - ./src:/app/src
+      - ./tests:/app/tests
+    networks:
+      - app-network
+    depends_on:
+      - myosDb  
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  mongodb_server_data:
