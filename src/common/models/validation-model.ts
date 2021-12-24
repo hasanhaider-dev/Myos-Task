@@ -8,8 +8,8 @@
 const Joi = require("celebrate").Joi;
 const validationmodel = {
     body: {
-        payloadName: Joi.string(),
-        payloadDate: Joi.date(),
+        productTitle: Joi.string(),
+        productDescription: Joi.string(),
     },
 };
 export default validationmodel;

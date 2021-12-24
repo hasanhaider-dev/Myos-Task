@@ -45,6 +45,12 @@ const conf = convict({
             env: 'POOL_SIZE',
         },
     },
+    pager: {
+        defaultLimit: 10,
+        defaultPage: 1,
+        defaultSortBy: "_id",
+        defaultSortOrder: -1
+    },
 });
 
 conf.validate({ allowed: 'strict' });

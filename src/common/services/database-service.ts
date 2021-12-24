@@ -5,6 +5,7 @@ import { Service } from "typedi";
 import config from "../../config";
 import { logger } from "../../utils/logger";
 import { DbResponseModel } from "../models";
+import { PagingModel } from "../models/paging-model";
 
 @Service()
 export class DatabaseService {
@@ -31,7 +32,7 @@ export class DatabaseService {
             );
             const savedItem = await new model(payload).save();
             if (savedItem) {
-                const result: DbResponseModel = { payload: savedItem, success: true }
+                const result: DbResponseModel = { result: savedItem, success: true }
                 logger.info(
                     "DATABASE_SERVICE.addItem: Recieved saved item from: " +
                     model.collection.collectionName,
@@ -39,7 +40,7 @@ export class DatabaseService {
                 );
                 return {
                     success: true,
-                    payload: result,
+                    result: result,
                 };
             }
         } catch (error) {
@@ -56,244 +57,6 @@ export class DatabaseService {
         }
     }
 
-    public async getSingleItem(
-        model: Model<unknown>,
-        query: unknown,
-        projectPayload?: unknown,
-        options?: unknown
-    ): Promise<DbResponseModel> {
-        try {
-            logger.info(
-                "DATABASE_SERVICE.getSingleItem: getting single item from: " +
-                model.collection.collectionName,
-                query
-            );
-
-            const result: DbResponseModel = projectPayload
-                ? await model.findOne(query, projectPayload, options).lean()
-                : await model.findOne(query, null, options).lean();
-
-            if (result) {
-                logger.info(
-                    "DATABASE_SERVICE.getSingleItem: Recieved query result from: " +
-                    model.collection.collectionName,
-                    result
-                );
-
-                return {
-                    success: true,
-                    payload: result,
-                };
-            }
-        } catch (error) {
-            logger.error(
-                "DATABASE_SERVICE.getSingleItem: Error occured while getting single item in: " +
-                model.collection.collectionName,
-                error
-            );
-
-            return {
-                success: false,
-                error: error,
-            };
-        }
-    }
-
-    public async getLimitedItems(
-        model: Model<unknown>,
-        query: unknown,
-        limit: number
-    ): Promise<DbResponseModel> {
-        try {
-            logger.info(
-                "DATABASE_SERVICE.getLimitedItems: getting limited items from: " +
-                model.collection.collectionName +
-                " Limit: " +
-                limit,
-                query
-            );
-            const result = await model.find(query).limit(limit).lean();
-            if (result) {
-                logger.info(
-                    "DATABASE_SERVICE.getLimitedItems: Recieved query result from: " +
-                    model.collection.collectionName +
-                    " Limit: " +
-                    limit,
-                    result
-                );
-                return {
-                    success: true,
-                    payload: result,
-                };
-            }
-        } catch (error) {
-            logger.error(
-                "DATABASE_SERVICE.getLimitedItems: Error occured while getting many items in in: " +
-                model.collection.collectionName +
-                " Limit: " +
-                limit,
-            )
-            return {
-                success: false,
-                error: error,
-            };
-        }
-    }
-
-    public async getLimitedItemsWithCustomResult(
-        model: Model<unknown>,
-        query: unknown,
-        limit: number,
-        projectPayload: unknown
-    ): Promise<DbResponseModel> {
-        try {
-            logger.info(
-                "DATABASE_SERVICE.getLimitedItemsWithCustomResult: getting limited items from: " +
-                model.collection.collectionName +
-                " Limit: " +
-                limit,
-                query
-            );
-            const result = await model
-                .find(query, projectPayload)
-                .limit(limit)
-                .lean();
-            if (result) {
-                logger.info(
-                    "DATABASE_SERVICE.getLimitedItemsWithCustomResult: Recieved query result from: " +
-                    model.collection.collectionName +
-                    " Limit: " +
-                    limit,
-                    result
-                );
-                return {
-                    success: true,
-                    payload: result,
-                };
-            }
-        } catch (error) {
-            logger.error(
-                "DATABASE_SERVICE.getLimitedItemsWithCustomResult: Error occured while getting many items in in: " +
-                model.collection.collectionName +
-                " Limit: " +
-                limit,
-                error
-            );
-            return {
-                success: false,
-                error: error,
-            };
-        }
-    }
-
-    public async getAggregatedGroupedItems(
-        model: Model<unknown>,
-        query: unknown,
-        groupingPayload: unknown,
-        projectPayload?: unknown
-    ): Promise<DbResponseModel> {
-        try {
-            logger.info(
-                "DATABASE_SERVICE.getAggregatedGroupedItems: getting aggregated items from: " +
-                model.collection.collectionName,
-                query
-            );
-
-            const result = projectPayload
-                ? model
-                    .aggregate([
-                        { $match: query },
-                        { $group: groupingPayload },
-                        { $project: projectPayload },
-                    ])
-                    .allowDiskUse(true)
-                : model.aggregate([{ $match: query }, { $group: groupingPayload }]);
-
-            if (result) {
-                logger.info(
-                    "DATABASE_SERVICE.getAggregatedGroupedItems: Recieved query result from: " +
-                    model.collection.collectionName,
-                    result
-                );
-                return {
-                    success: true,
-                    payload: result,
-                };
-            }
-        } catch (error) {
-            logger.error(
-                "DATABASE_SERVICE.getAggregatedGroupedItems: Error occured while getting aggregated items in: " +
-                model.collection.collectionName,
-                error
-            );
-
-            return {
-                success: false,
-                error: error,
-            };
-        }
-    }
-
-    public async getAggregatedJoinedItems(
-        model: Model<unknown>,
-        from: unknown,
-        localField: unknown,
-        foreignField: unknown,
-        as: unknown,
-        modelQuery: unknown,
-        fromQuery: unknown,
-        projectPayload: unknown
-    ): Promise<DbResponseModel> {
-        try {
-            logger.info(
-                "DATABASE_SERVICE.getAggregatedJoinedItems: getting aggregated items from: " +
-                model.collection.collectionName,
-                modelQuery,
-                from,
-                fromQuery
-            );
-
-            const result = model
-                .aggregate([
-                    { $match: modelQuery },
-                    {
-                        $lookup: {
-                            from,
-                            localField,
-                            foreignField,
-                            as,
-                        },
-                    },
-                    { $match: fromQuery },
-                    { $unwind: { path: `$${as}`, preserveNullAndEmptyArrays: true } },
-                    { $project: projectPayload },
-                ])
-                .allowDiskUse(true);
-
-            if (result) {
-                logger.info(
-                    "DATABASE_SERVICE.getAggregatedJoinedItems: Recieved query result from: " +
-                    model.collection.collectionName,
-                    result
-                );
-                return {
-                    success: true,
-                    payload: result,
-                };
-            }
-        } catch (error) {
-            logger.error(
-                "DATABASE_SERVICE.getAggregatedGroupedItems: Error occured while getting aggregated items in: " +
-                model.collection.collectionName,
-                error
-            );
-
-            return {
-                success: false,
-                error: error,
-            };
-        }
-    }
 
     public async getManyItems(
         model: Model<unknown>,
@@ -317,7 +80,7 @@ export class DatabaseService {
                 );
                 return {
                     success: true,
-                    payload: result,
+                    result: result,
                 };
             }
         } catch (error) {
@@ -355,7 +118,7 @@ export class DatabaseService {
                 );
                 return {
                     success: true,
-                    payload: result,
+                    result: result,
                 };
             }
         } catch (error) {
@@ -372,165 +135,71 @@ export class DatabaseService {
         }
     }
 
-    public async updateItem(
-        model: Model<unknown>,
-        query: unknown,
-        payload: unknown
+	public async getPagedItems(
+        model: any, query: any, projectPayload: any
     ): Promise<DbResponseModel> {
-        try {
-            logger.info(
-                "DATABASE_SERVICE.updateItem: updating item in: " +
-                model.collection.collectionName,
-                payload
-            );
+		try {
+			logger.info(
+				'DATABASE_SERVICE.getManyItems: getting filtered from: ' +
+				model.collection.collectionName,
+				query,
+			);
 
-            const updatedItem = await model.findOneAndUpdate(query, payload, {
-                useFindAndModify: false,
-                new: true,
-                lean: true,
-            });
+			const limit = parseInt(query.limit || config.pager.defaultLimit);
+			const page = parseInt(query.page || config.pager.defaultPage);
+			const skip = limit * (page - 1);
 
-            if (updatedItem) {
-                logger.info(
-                    "DATABASE_SERVICE.updateItem: Recieved updated item from: " +
-                    model.collection.collectionName,
-                    query,
-                    payload,
-                    updatedItem
-                );
+
+			let sortingOption: any = {};
+			if (query.sortBy) {
+				sortingOption[query.sortBy] = query.sortOrder;
+			}
+			else {
+				sortingOption = { [`${config.pager.defaultSortBy}`]: config.pager.defaultSortOrder };
+			}
+
+			delete query.limit;
+			delete query.page;
+			delete query.sortBy;
+			delete query.sortOrder;
+
+			const [total, result] = await Promise.all([
+				model.countDocuments(query),
+				model.find(query, projectPayload).skip(skip).limit(limit).sort(sortingOption).lean(),
+			])
+
+			if (result && result.length) {
+
+				const pagingModel = new PagingModel();
+				pagingModel.total = total;
+				pagingModel.totalPages = Math.ceil(total / limit);
+				pagingModel.pageNumber = page;
+				pagingModel.pageSize = limit;
+				pagingModel.sortBy = sortingOption;
+
+				logger.info(
+					'DATABASE_SERVICE.getFilteredItems: Recieved query result from: ' +
+					model.collection.collectionName,
+					result,
+					pagingModel
+				);
                 return {
                     success: true,
-                    payload: updatedItem,
+                    result: {pagingModel, result},
+                    
                 };
-            }
-        } catch (error) {
-            logger.error(
-                "DATABASE_SERVICE.updateItem: Error occured while updating item in: " +
-                model.collection.collectionName,
-                error
-            );
+			}
 
+		} catch (error) {
+			logger.error(
+				'DATABASE_SERVICE.getFilteredItems: Error occured while getting filtered items in: ' +
+				model.collection.collectionName,
+				error,
+			);
             return {
                 success: false,
                 error: error,
             };
-        }
-    }
-
-    public async updateManyItem(
-        model: Model<unknown>,
-        query: unknown,
-        payload: unknown
-    ): Promise<DbResponseModel> {
-        try {
-            logger.info(
-                "DATABASE_SERVICE.updateManyItem: updating many items in: " +
-                model.collection.collectionName,
-                payload
-            );
-
-            const updatedItem = await model.updateMany(query, payload, {
-                useFindAndModify: false,
-                new: true,
-            });
-
-            if (updatedItem) {
-                logger.info(
-                    "DATABASE_SERVICE.updateManyItem: Recieved updated items from: " +
-                    model.collection.collectionName,
-                    query,
-                    payload
-                );
-                return {
-                    success: true,
-                    payload: updatedItem,
-                };
-            }
-        } catch (error) {
-            logger.error(
-                "DATABASE_SERVICE.updateManyItem: Error occured while updating many items in: " +
-                model.collection.collectionName,
-                error
-            );
-
-            return {
-                success: false,
-                error: error,
-            };
-        }
-    }
-
-    public async getDocumentCount(
-        model: Model<unknown>,
-        query: unknown
-    ): Promise<DbResponseModel> {
-        try {
-            logger.info(
-                "DATABASE_SERVICE.getDocumentCount: getting document counts from: " +
-                model.collection.collectionName,
-                query
-            );
-
-            const result: number = await model.countDocuments(query);
-            if (result) {
-                logger.info(
-                    "DATABASE_SERVICE.getDocumentCount: Recieved document counts from: " +
-                    model.collection.collectionName,
-                    query
-                );
-                return {
-                    success: true,
-                    payload: result,
-                };
-            }
-        } catch (error) {
-            logger.error(
-                "DATABASE_SERVICE.getDocumentCount: Error occured while getting document count in: " +
-                model.collection.collectionName,
-                error
-            );
-
-            return {
-                success: false,
-                error: error,
-            };
-        }
-    }
-
-    public async isExists(
-        model: Model<unknown>,
-        query: unknown
-    ): Promise<DbResponseModel> {
-        try {
-            logger.info(
-                "DATABASE_SERVICE.isExists: checking documents in: " +
-                model.collection.collectionName,
-                query
-            );
-
-            const result: boolean = await model.exists(query);
-            if (result != undefined) {
-                logger.info(
-                    "DATABASE_SERVICE.isExists: Recieved query result from: " +
-                    model.collection.collectionName,
-                    query
-                );
-                return {
-                    success: true,
-                    payload: result,
-                };
-            }
-        } catch (error) {
-            logger.error(
-                "DATABASE_SERVICE.isExists: Error occured while checking documents in: " +
-                model.collection.collectionName,
-                error
-            );
-
-            return {
-                success: false,
-                error: error,
-            };
-        }
-    }
+		}
+	}
 }

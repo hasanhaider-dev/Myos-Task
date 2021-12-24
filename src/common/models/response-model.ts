@@ -1,6 +1,6 @@
-export interface ResponseModel<T> {
+export class ResponseModel <Any> {
   message: string;
-  payload: Record<string, T>;
+  payload: Any;
   statusCode: string;
   hasError: boolean;
 }
