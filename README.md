@@ -9,3 +9,4 @@ All services are defined inside the docker-compose file and the project will use
 - Please install docker & docker-compose in your system
 - Clone the project, and open terminal at the root of the project
 - run "docker-compose up --build"
+- You will be able to see the API documentation available at localhost:3005/docs
